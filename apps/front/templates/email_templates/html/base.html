@@ -1,0 +1,9 @@
+{% load emails %}
+<div id="content">
+    {% block content %}{% endblock %}
+</div>
+<div id="footer">
+    {% block footer %}
+        <a href="{% url 'home' %}">{% url 'home' %}</a>
+    {% endblock %}
+</div>

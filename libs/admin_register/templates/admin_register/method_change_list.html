@@ -1,0 +1,7 @@
+{% extends 'admin/change_list.html' %}
+{% block object-tools-items %}
+    {% for option in list_options %}
+        <li><a href="{{ option.url }}" class="{{ option.class }}">{{ option.label }}</a></li>
+    {% endfor %}
+    {{ block.super }}
+{% endblock %}

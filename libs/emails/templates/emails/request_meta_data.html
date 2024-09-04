@@ -1,0 +1,17 @@
+{% spaceless %}
+{% if request %}
+{% if html_template %}
+<hr class="request-meta-separator">
+<ul class="request-meta-data">
+{% for label, value in data %}
+<li>{{ label }}: {{ value }}</li>
+{% endfor %}
+</ul>
+<hr class="request-meta-separator">
+{% else %}
+==Request-Meta-Data====
+{% for label, value in data %}{{ label }}: {{ value }}
+{% endfor %}==Request-Meta-Data-End====
+{% endif %}
+{% endif %}
+{% endspaceless %}
