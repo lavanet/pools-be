@@ -16,3 +16,6 @@ uWSGI
 grpcio
 grpcio-tools
 setuptools
+python-dotenv
+Pillow
+zappa

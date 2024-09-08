@@ -1,5 +1,8 @@
 # coding: UTF-8
 from os import path, environ
+from dotenv import load_dotenv
+
+load_dotenv()
 
 ENV = 'dev'
 INSTALLED_APPS = (
@@ -29,9 +32,9 @@ INSTALLED_APPS = (
     'apps.api.api_auth',
     'apps.core',
     'apps.core.blockchains',
+    'apps.core.coingecko',
     'apps.core.lava_queries',
     'apps.core.users',
-    'apps.front',
 )
 
 ADMINS = (
@@ -81,7 +84,6 @@ MIDDLEWARE = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'libs.emails.middleware.GlobalRequest',
 )
 
 STATICFILES_FINDERS = (

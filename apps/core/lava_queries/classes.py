@@ -10,9 +10,13 @@ class LavaQueryException(Exception):
     pass
 
 
+class LavaQueryParseError(LavaQueryException):
+    pass
+
+
 class LavaQuery:
     @staticmethod
-    def query(method='abci_query', path='', data=''):
+    def query(method='abci_query', path='', data='', height=0):
         response = requests.post(
             url='https://lav1.tendermintrpc.lava.build',
             json={
@@ -21,7 +25,7 @@ class LavaQuery:
                 'method': method,
                 'params': {
                     'data': data,
-                    'height': '0',
+                    'height': str(height),
                     'path': path,
                     'prove': False,
                 }})
@@ -50,10 +54,10 @@ class LavaQuery:
         return parser
 
     @classmethod
-    def query_pools(cls):
+    def query_pools(cls, height=0):
         # avad q rewards pools --node "https://lav1.tendermintrpc.lava.build:443"
         parser = lava_rewards.QueryPoolsResponse()
-        parser.ParseFromString(cls.query(path='/lavanet.lava.rewards.Query/Pools'))
+        parser.ParseFromString(cls.query(path='/lavanet.lava.rewards.Query/Pools', height=height))
         return parser
 
     @classmethod
@@ -62,13 +66,18 @@ class LavaQuery:
         request = lava_pairing.QueryProvidersRequest()
         request.chainID = chain_id
         parser = lava_pairing.QueryProvidersResponse()
-        parser.ParseFromString(cls.query(path='/lavanet.lava.pairing.Query/Providers',
+        try:
+            parser.ParseFromString(cls.query(path='/lavanet.lava.pairing.Query/Providers',
                                          data=request.SerializeToString().hex()))
+        except:
+            raise LavaQueryParseError()
         return parser
 
     @classmethod
-    def query_iprpc_spec_rewards(cls):
+    def query_iprpc_spec_rewards(cls, height=0):
         # lavad q rewards iprpc-spec-reward --node "https://lav1.tendermintrpc.lava.build:443"
         parser = lava_rewards.QueryIprpcSpecRewardResponse()
-        parser.ParseFromString(cls.query(path='/lavanet.lava.rewards.Query/IprpcSpecReward'))
+        parser.ParseFromString(cls.query(path='/lavanet.lava.rewards.Query/IprpcSpecReward', height=height))
         return parser
+
+# lavad q spec show-spec ETH1 --node "https://lav1.tendermintrpc.lava.build:443"

@@ -4,6 +4,8 @@ Ubuntu 24.04
 
 Python 3.12
 
+Python-pip 24.3.0
+
 Python dependencies listed in requirements.txt
 
 https://www.djangoproject.com/

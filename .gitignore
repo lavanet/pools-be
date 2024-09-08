@@ -18,6 +18,7 @@
 /static
 /Vagrantfile
 
+.env
 local_env.py
 local_settings.py
 node_modules
