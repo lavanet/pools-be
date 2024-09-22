@@ -30,6 +30,7 @@ INSTALLED_APPS = (
     'apps.core',
     'apps.core.blockchains',
     'apps.core.coingecko',
+    'apps.core.kvstore',
     'apps.core.lava_queries',
     'apps.core.users',
 )

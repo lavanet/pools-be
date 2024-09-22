@@ -14,6 +14,7 @@ PROTO_APPS = (
     'cosmos_proto',
     'gogoproto',
     'google/api',
+    'ibc',
     'lavanet',
     'tendermint',
 )
