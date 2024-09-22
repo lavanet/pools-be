@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#
+# !!! THIS FILE IS MAINTAINED BY PUPPET !!!
+#
+
+LOCAL_NODE_MODULES=~/.node_modules
+PROJECT_NODE_MODULES=<%= @path %>/node_modules
+mkdir -p ${LOCAL_NODE_MODULES}
+mountpoint -q ${PROJECT_NODE_MODULES} || sudo mount --bind ${LOCAL_NODE_MODULES} ${PROJECT_NODE_MODULES}

@@ -1,0 +1,43 @@
+#
+# !!! THIS FILE IS MAINTAINED BY PUPPET !!!
+#
+
+upstream django-<%= @project %> {
+    server 127.0.0.1:49152 fail_timeout=60;
+}
+
+# Serve HTTP
+server {
+    listen 80 default;
+    include <%= @site_path %>/common.conf;
+    location = /robots.txt {
+        add_header  Content-Type  text/plain;
+        return 200 "User-agent: *\nDisallow: /\n";
+    }
+}
+
+# Redirect HTTP to HTTPS
+#server {
+#    listen 80 default;
+#    return 301 https://$host$request_uri;
+#}
+
+# Serve HTTPS
+#server {
+#    auth_basic           "Stage Area";
+#    auth_basic_user_file <%= @site_path %>/htpasswd;
+#    listen 443 ssl http2;
+#    include <%= @site_path %>/common-ssl.conf;
+#    include <%= @site_path %>/common.conf;
+#}
+
+# Serve HTTPS
+#server {
+#    listen 443 ssl http2;
+#    include <%= @site_path %>/common-ssl.conf;
+#    include <%= @site_path %>/common.conf;
+#    location = /robots.txt {
+#        add_header  Content-Type  text/plain;
+#        return 200 "User-agent: *\nDisallow: /\n";
+#    }
+#}

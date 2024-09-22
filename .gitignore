@@ -8,18 +8,14 @@
 /.coverage
 /.vagrant
 /.venv
-/assets/bundles
-/celerybeat-schedule
-/celerybeat.pid
-/logs/*.log*
 /media
-/media_restricted
-/puppet
 /static
-/Vagrantfile
 
 .env
 local_env.py
 local_settings.py
 node_modules
 tmp
+
+.cdk.staging
+cdk.out

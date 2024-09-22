@@ -1,0 +1,14 @@
+wheel
+psycopg2-binary
+Django==4.2.*
+djangorestframework
+django-filter
+django-ses
+drf-yasg
+requests
+grpcio
+grpcio-tools
+setuptools
+python-dotenv
+Pillow
+apig_wsgi
