@@ -6,6 +6,7 @@ import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as rds from "aws-cdk-lib/aws-rds";
+import * as s3 from 'aws-cdk-lib/aws-s3';
 
 export class LavapoolCdkStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -23,6 +24,17 @@ export class LavapoolCdkStack extends cdk.Stack {
                 excludePunctuation: true,
                 includeSpace: false,
                 generateStringKey: 'password',
+            },
+        });
+
+        const djangoSecret = new secretsmanager.Secret(this, 'Lavapool-DjangoSecrets', {
+            generateSecretString: {
+                secretStringTemplate: JSON.stringify({
+                    username: 'lavapool'
+                }),
+                excludePunctuation: true,
+                includeSpace: false,
+                generateStringKey: 'secretkey',
             },
         });
 
@@ -47,21 +59,35 @@ export class LavapoolCdkStack extends cdk.Stack {
             securityGroups: [dbSecurityGroup],
         });
 
+        const bucket = new s3.Bucket(this, 'Lavapool-PublicBucket', {
+            bucketName: 'lavapool-0b86ez',
+            publicReadAccess: true,
+            blockPublicAccess: {
+                blockPublicAcls: false,
+                blockPublicPolicy: false,
+                ignorePublicAcls: false,
+                restrictPublicBuckets: false,
+            }
+        });
 
-        const dockerLambda = new lambda.DockerImageFunction(this, 'Lavapool-Django', {
+
+        const apiLambda = new lambda.DockerImageFunction(this, 'Lavapool-Django', {
             code: lambda.DockerImageCode.fromImageAsset('.'),
-            timeout: cdk.Duration.seconds(30),
+            timeout: cdk.Duration.seconds(60),
+            memorySize: 256,
             vpc,
             environment: {
                 'SETTINGS': 'prod',
-                'POSTGRES_HOST': auroraCluster.clusterEndpoint.hostname,
-                'POSTGRES_PORT': auroraCluster.clusterEndpoint.port.toString(),
-                'POSTGRES_USER': 'lavapool',
-                'POSTGRES_DB': 'Lavapool',
-                'POSTGRES_PASSWORD': dbSecret.secretValueFromJson('password').unsafeUnwrap(),
-                // tODO query secret manager from django with boto instead of unsafeUnwrap().
+                'DJANGO_SECRETS': djangoSecret.secretArn,
+                'DB_SECRETS': dbSecret.secretArn,
+                'DB_HOST': auroraCluster.clusterEndpoint.hostname,
+                'AWS_STORAGE_BUCKET_NAME': bucket.bucketName,
             },
         });
+
+        dbSecret.grantRead(apiLambda);
+        djangoSecret.grantRead(apiLambda);
+        bucket.grantReadWrite(apiLambda);
 
         const httpApi = new apigateway.HttpApi(this, 'MyHttpApi', {
             apiName: 'Lavapool-Django-API',
@@ -71,12 +97,14 @@ export class LavapoolCdkStack extends cdk.Stack {
         httpApi.addRoutes({
             path: '/{proxy+}',
             methods: [apigateway.HttpMethod.ANY],
-            integration: new integrations.HttpLambdaIntegration('Lavapool-Admin', dockerLambda),
+            integration: new integrations.HttpLambdaIntegration('Lavapool-Admin', apiLambda),
         });
 
         new cdk.CfnOutput(this, 'Lavapool-ApiUrl', {
             value: httpApi.url!,
             description: 'The HTTP API Gateway URL',
         });
+
+
     }
 }
