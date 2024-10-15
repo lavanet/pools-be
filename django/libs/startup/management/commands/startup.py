@@ -73,5 +73,5 @@ class Command(BaseCommand):
 
     @staticmethod
     def load_fixtures():
-        for initial_fixture in settings.STARTUP_INITIAL_FIXTURES:
+        for initial_fixture in getattr(settings, 'STARTUP_INITIAL_FIXTURES', []):
             call_command('loaddata', initial_fixture, )

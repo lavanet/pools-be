@@ -8,8 +8,8 @@
 /.coverage
 /.vagrant
 /.venv
-/media
-/static
+/django/media
+/django/static
 
 .env
 local_env.py

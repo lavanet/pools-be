@@ -2,11 +2,14 @@ import {Construct} from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 
 export class LavapoolCdkStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -60,7 +63,7 @@ export class LavapoolCdkStack extends cdk.Stack {
         });
 
         const bucket = new s3.Bucket(this, 'Lavapool-PublicBucket', {
-            bucketName: 'lavapool-0b86ez',
+            bucketName: 'lavapool-0b8e7z',
             publicReadAccess: true,
             blockPublicAccess: {
                 blockPublicAcls: false,
@@ -69,7 +72,6 @@ export class LavapoolCdkStack extends cdk.Stack {
                 restrictPublicBuckets: false,
             }
         });
-
 
         const apiLambda = new lambda.DockerImageFunction(this, 'Lavapool-Django', {
             code: lambda.DockerImageCode.fromImageAsset('.'),
@@ -85,13 +87,25 @@ export class LavapoolCdkStack extends cdk.Stack {
             },
         });
 
+        new lambda.Alias(this, 'Lavapool-Lambda-Django-Alias', {
+            aliasName: 'Lavapool-Django-Alias',
+            version: apiLambda.currentVersion,
+            provisionedConcurrentExecutions: 1
+        });
+
         dbSecret.grantRead(apiLambda);
         djangoSecret.grantRead(apiLambda);
         bucket.grantReadWrite(apiLambda);
 
-        const httpApi = new apigateway.HttpApi(this, 'MyHttpApi', {
+        const httpApi = new apigateway.HttpApi(this, 'Lavapool-HttpApi', {
             apiName: 'Lavapool-Django-API',
-            createDefaultStage: true,  // Automatically creates an HTTP API stage
+            createDefaultStage: true,
+            corsPreflight: {
+                allowHeaders: ['*'],
+                allowOrigins: ['*'],
+                allowMethods: [apigatewayv2.CorsHttpMethod.ANY],
+                maxAge: cdk.Duration.days(10),
+            },
         });
 
         httpApi.addRoutes({
@@ -105,6 +119,36 @@ export class LavapoolCdkStack extends cdk.Stack {
             description: 'The HTTP API Gateway URL',
         });
 
+        const updateRelaysRule = new events.Rule(this, 'Lavapool-Django-Update-Relays', {
+            schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+        });
+        updateRelaysRule.addTarget(new targets.LambdaFunction(apiLambda, {
+            event: events.RuleTargetInput.fromObject({
+                manage: 'blockchains',
+                arg: 'update_request_relays_testnet',
+            }),
+        }));
+        updateRelaysRule.addTarget(new targets.LambdaFunction(apiLambda, {
+            event: events.RuleTargetInput.fromObject({
+                manage: 'blockchains',
+                arg: 'update_request_relays_mainnet',
+            }),
+        }));
 
+        const hourlyUpdate = new events.Rule(this, 'Lavapool-Django-Hourly-Update', {
+            schedule: events.Schedule.rate(cdk.Duration.minutes(60)),
+        });
+        hourlyUpdate.addTarget(new targets.LambdaFunction(apiLambda, {
+            event: events.RuleTargetInput.fromObject({
+                manage: 'blockchains',
+                arg: 'hourly_update',
+            }),
+        }));
+        hourlyUpdate.addTarget(new targets.LambdaFunction(apiLambda, {
+            event: events.RuleTargetInput.fromObject({
+                manage: 'blockchains',
+                arg: 'update_chain_rpc_providers',
+            }),
+        }));
     }
 }

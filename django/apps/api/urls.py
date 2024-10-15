@@ -1,9 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from apps.api.viewsets import ChainViewSet, RewardViewSet
+from apps.api.viewsets import ChainViewSet, RewardViewSet, HomeViewSet
 
 router = DefaultRouter()
+router.register('home', HomeViewSet, basename='home')
 router.register('chains', ChainViewSet)
 router.register('rewards', RewardViewSet)
 

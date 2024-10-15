@@ -1,4 +1,9 @@
 **/.env
 **/local_settings.py
 **/__pycache__
-django/proto/*
+.git
+.idea
+.venv
+django/media
+django/proto
+node_modules

@@ -21,3 +21,8 @@ class KeyValue(models.Model):
             if save:
                 return cls.set(key, default).value
             return default
+
+    @classmethod
+    def fetch(cls, keys, default=None):
+        result = {key: value for key, value in cls.objects.filter(key__in=keys).values_list('key', 'value')}
+        return {key: result.get(key, default) for key in keys}

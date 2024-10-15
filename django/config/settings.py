@@ -35,11 +35,6 @@ INSTALLED_APPS = (
     'apps.core.users',
 )
 
-ADMINS = (
-    ('William', 'william@webisoft.com'),
-    ('snickk', 'simon@webisoft.com'),
-)
-
 LOGIN_URL = 'admin:index'
 
 PROJECT_SETTINGS = path.dirname(__file__)
@@ -125,8 +120,6 @@ TEMPLATES = (
     },
 )
 
-MB = 2 ** 20
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
@@ -200,9 +193,6 @@ CSRF_TRUSTED_ORIGINS = (
 PROJECT_NAME = 'lavapool'
 SECRET_KEY = environ.get('DJANGO_SECRET_KEY', 'temporary_secret_key_for_dev')
 AUTH_USER_MODEL = 'users.User'
-STARTUP_INITIAL_FIXTURES = (
-    'admins',
-)
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'apps.api.handlers.exception_handler',

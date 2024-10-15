@@ -1,4 +1,5 @@
 import base64
+import json
 from collections import namedtuple
 
 import requests
@@ -6,6 +7,8 @@ from ibc.applications.transfer.v1 import query_pb2 as ibc_query
 from lavanet.lava.pairing import query_pb2 as lava_pairing
 from lavanet.lava.rewards import query_pb2 as lava_rewards
 from lavanet.lava.spec import query_pb2 as lava_spec
+
+from apps.core.blockchains.constants import NetworkType
 
 
 class LavaQueryException(Exception):
@@ -22,8 +25,13 @@ class LavaQueryInvalidHeight(LavaQueryException):
 
 class LavaQueryBase:
     ERROR_RESPONSE = namedtuple('ErrorResponse', ['status_code', 'text'])(0, 'Unknown Error')
+    NETWORKS = {
+        NetworkType.MAINNET: 'https://lava.tendermintrpc.lava.build',
+        NetworkType.TESTNET: 'https://lav1.tendermintrpc.lava.build',
+    }
 
-    def __init__(self):
+    def __init__(self, network=NetworkType.MAINNET):
+        self.network = network
         self.id = -1
 
     def next_id(self):
@@ -51,7 +59,7 @@ class LavaQuery(LavaQueryBase):
 
     def _query(self, method='abci_query', path='', data='', height=0):
         return requests.post(
-            url='https://lav1.tendermintrpc.lava.build',
+            url=self.NETWORKS[self.network],
             json={
                 'jsonrpc': '2.0',
                 'id': self.next_id(),
@@ -116,7 +124,7 @@ class LavaQuery(LavaQueryBase):
         return parser
 
     def query_denom_trace(self, denom_trace):
-        # lavad q ibc-transfer denom-trace E3FCBEDDBAC500B1BAB90395C7D1E4F33D9B9ECFE82A16ED7D7D141A0152323F
+        # lavad q ibc-transfer denom-trace C09A0FFBA11313A32D42A58D820190E71E9D0D5AB3E841C0391EB9A623E07F4B --node "https://lav1.tendermintrpc.lava.build:443"
         # --node "https://lav1.tendermintrpc.lava.build:443"
         request = ibc_query.QueryDenomTraceRequest()
         request.hash = denom_trace
@@ -125,19 +133,11 @@ class LavaQuery(LavaQueryBase):
                                           data=request.SerializeToString().hex()))
         return parser
 
-    def query_requests(self, height=0):
-        parser = lava_rewards.QueryRequestsResponse()
-        parser.ParseFromString(self.query(path='/lavanet.lava.rewards.Query/Requests', height=height))
-        return parser
-
-
-# lavad q spec show-spec ETH1 --node "https://lav1.tendermintrpc.lava.build:443"
-
 
 class LavaEvents(LavaQueryBase):
     def _query(self, height=0):
         return requests.post(
-            url='https://lav1.tendermintrpc.lava.build',
+            url=self.NETWORKS[self.network],
             json={
                 'jsonrpc': '2.0',
                 'id': self.next_id(),

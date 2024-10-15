@@ -28,4 +28,3 @@ def get_secret(secret_name):
             decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
             return json.loads(decoded_binary_secret)
 
-    return None
