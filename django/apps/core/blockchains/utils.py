@@ -37,6 +37,11 @@ def get_month(number, month_zero=datetime(2024, 3, 17)):
     return month_zero + relativedelta(months=number)
 
 
+def get_days_left(number):
+    today = now().today().replace(hour=0, minute=0, second=0, microsecond=0)
+    return relativedelta(get_month(number), today)
+
+
 def expire(timeout):
     if timeout:
         return now() + timedelta(seconds=timeout)

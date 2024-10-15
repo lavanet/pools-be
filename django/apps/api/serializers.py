@@ -41,6 +41,5 @@ class ChainCardSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['months_remaining'] = instance.months_remaining or 'TBD'
         data['service'] = 'RPC'
         return data

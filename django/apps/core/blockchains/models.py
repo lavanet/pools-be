@@ -11,6 +11,7 @@ from apps.core.kvstore.models import KeyValue
 from apps.core.lava_queries.classes import LavaQuery, LavaQueryException
 from libs.utils import logger, download_file
 from .constants import NetworkType, RewardType
+from .utils import get_month, get_days_left
 
 
 class Chain(models.Model):
@@ -76,8 +77,13 @@ class Chain(models.Model):
         if latest_reward := self.rewards.order_by('month').last():
             if latest_reward.month is None:
                 self.months_remaining = 'TBD'
+            elif latest_reward.month > 0:
+                mr_delta = get_days_left(latest_reward.month)
+                self.months_remaining = f'{mr_delta.days}days'
+                if mr_delta.months:
+                    self.months_remaining = f'{mr_delta.months}m {self.months_remaining}'
             else:
-                self.months_remaining = min(0, latest_reward.month - current_month + 1)
+                self.months_remaining = None
 
     @property
     def total_rewards(self):
@@ -172,8 +178,6 @@ class Reward(models.Model):
                                    help_text='Manual rewards will be counted instead of OnChain reward '
                                              'for the same month if both exist.', )
     price_usd = models.DecimalField(max_digits=16, decimal_places=4, null=True, blank=True)
-
-    # tODO set null for usd previously set to 0
 
     class Meta:
         unique_together = ('chain', 'denom', 'month', 'reward_type',),
