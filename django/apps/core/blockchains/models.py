@@ -72,8 +72,6 @@ class Chain(models.Model):
         self.current_rewards = Decimal(0)
         if current := self.rewards.filter(month=current_month).order_by('reward_type').first():
             self.current_rewards = current.get_amount()
-        if not self.denom:
-            self.denom = current.denom
 
     def update_rewards(self, current_month=None, commit=True):
         current_month = current_month or KeyValue.get(f'mainnet_current_month')
@@ -171,8 +169,8 @@ class Denom(models.Model):
     def get_amount(self, amount):
         return Decimal(amount) / Decimal(self.microtoken_factor or 1)
 
-    def to_usd(self, amount):
-        return Decimal(self.get_amount(amount) * self.price).quantize(Decimal('1'))
+    def to_usd(self, amount, usd_price=None):
+        return Decimal(self.get_amount(amount) * (usd_price or self.price)).quantize(Decimal('1'))
 
     def update_coingecko_price(self, commit=True, force=False):
         if can_update_coingecko(self, force=force):
@@ -211,15 +209,9 @@ class Reward(models.Model):
 
     def get_amount_usd(self):
         if self.price_usd:
-            return Decimal(self.reward_amount * self.price_usd).quantize(Decimal('1'))
+            return self.denom.to_usd(self.reward_amount, usd_price=self.price_usd)
         if self.denom and self.denom.coingecko_id:
             return self.denom.to_usd(self.reward_amount)
-
-        """
-        # tODO 
-        if past reward, use the price_usd from the reward
-        if future reward, use the price_usd from the denom
-        """
 
 
 class BlockRequest(models.Model):

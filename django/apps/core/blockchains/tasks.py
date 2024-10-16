@@ -6,8 +6,9 @@ from django.utils.timezone import now
 
 from apps.core.blockchains.classes import DenomStore
 from apps.core.blockchains.constants import NetworkType
-from apps.core.blockchains.models import Chain, Reward, RewardType, BlockRequest
+from apps.core.blockchains.models import Chain, Reward, RewardType, BlockRequest, Denom
 from apps.core.blockchains.utils import expire, get_days_left
+from apps.core.coingecko.classes import CoinGeckoQuery
 from apps.core.kvstore.models import KeyValue
 from apps.core.lava_queries.classes import LavaQuery, LavaQueryException, LavaQueryInvalidHeight, LavaEvents
 from libs.print_time import PrintTime
@@ -84,6 +85,26 @@ def update_chain_rewards(iteration=30, network=NetworkType.MAINNET):
         KeyValue.set(f'{network}_current_month', current_month)
 
 
+def update_chain_rewards_token():
+    for reward in Reward.objects.filter(denom__microtoken_factor__gt=1):
+        print('reward:', reward, reward.denom)
+        try:
+            main_denom = Denom.objects.get(denom=reward.denom.denom[1:])
+            reward.reward_amount = reward.reward_amount / reward.denom.microtoken_factor
+            reward.denom = main_denom
+            reward.save(update_fields=['reward_amount', 'denom'])
+        except Denom.DoesNotExist:
+            pass
+
+
+def freeze_chain_rewards_price_usd(network=NetworkType.MAINNET):
+    current_month = KeyValue.get(f'{network}_current_month')
+    for reward in Reward.objects.filter(month=current_month-1, price_usd=None):
+        coin = CoinGeckoQuery.query_coin(coin_id=reward.denom.coingecko_id)
+        reward.price_usd = coin['market_data']['current_price']['usd']
+        reward.save(update_fields=['price_usd'])
+
+
 def update_chains_past_future_rewards(network=NetworkType.MAINNET):
     current_month = KeyValue.get(f'{network}_current_month')
     if current_month is None:
@@ -103,11 +124,9 @@ def update_chains_past_future_rewards(network=NetworkType.MAINNET):
 
 
 def update_total_rewards():
-    for reward in Reward.objects.all():
-        pass
     chains = Chain.objects.filter()
-    total_past_rewards = chains.aggregate(total_past_rewards=Sum('past_rewards'))['total_past_rewards']
-    total_future_rewards = chains.aggregate(total_future_rewards=Sum('future_rewards'))['total_future_rewards']
+    total_past_rewards = chains.aggregate(total_past_rewards=Sum('past_rewards_usd'))['total_past_rewards']
+    total_future_rewards = chains.aggregate(total_future_rewards=Sum('future_rewards_usd'))['total_future_rewards']
     KeyValue.set(f'total_past_rewards', str(total_past_rewards))
     KeyValue.set(f'total_future_rewards', str(total_future_rewards))
     KeyValue.set(f'total_rewards', str(total_past_rewards + total_future_rewards))
@@ -172,6 +191,8 @@ def update_total_requests():
 def hourly_update():
     update_chain_list()
     update_chain_rewards()
+    # update_chain_rewards_token()
+    freeze_chain_rewards_price_usd()
     update_chains_past_future_rewards()
     update_total_rewards()
     update_total_requests()
