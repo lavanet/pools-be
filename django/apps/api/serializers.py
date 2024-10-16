@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.core.blockchains import models
+from apps.core.blockchains.utils import get_days_left, get_month
 
 
 class ChainSerializer(serializers.ModelSerializer):
@@ -16,6 +17,9 @@ class RewardSerializer(serializers.ModelSerializer):
 
 
 class ChainCardSerializer(serializers.ModelSerializer):
+    rewards_end = serializers.SerializerMethodField()
+    rewards_days_remaining = serializers.SerializerMethodField()
+
     class Meta:
         model = models.Chain
         fields = [
@@ -25,15 +29,19 @@ class ChainCardSerializer(serializers.ModelSerializer):
             'clean_name',
             'denom',
             'logo',
-            'future_rewards',
-            'total_rewards',
-            'total_rewards_usd',
             'past_rewards',
+            'future_rewards',
+            'current_rewards',
+            'total_rewards',
+            'past_rewards_usd',
+            'future_rewards_usd',
+            'total_rewards_usd',
             'rpc_node_runners',
             'total_requests',
-            'months_remaining',
-            'rewards_per_month',
+            'rewards_end_month',
             'estimated_apr',
+            'rewards_end',
+            'rewards_days_remaining',
         ]
 
     def get_name(self, instance):
@@ -43,3 +51,15 @@ class ChainCardSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         data['service'] = 'RPC'
         return data
+
+    def get_rewards_end(self, instance):
+        try:
+            return get_month(int(instance.rewards_end_month) + 1).strftime('%b %d, %Y')
+        except:
+            return instance.rewards_end_month  # TBD / null
+
+    def get_rewards_days_remaining(self, instance):
+        try:
+            return get_days_left(int(instance.rewards_end_month) + 1).days
+        except:
+            pass

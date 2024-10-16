@@ -1,13 +1,13 @@
 from collections import defaultdict
 
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, Q
 from django.db.transaction import atomic
 from django.utils.timezone import now
 
 from apps.core.blockchains.classes import DenomStore
 from apps.core.blockchains.constants import NetworkType
 from apps.core.blockchains.models import Chain, Reward, RewardType, BlockRequest
-from apps.core.blockchains.utils import expire
+from apps.core.blockchains.utils import expire, get_days_left
 from apps.core.kvstore.models import KeyValue
 from apps.core.lava_queries.classes import LavaQuery, LavaQueryException, LavaQueryInvalidHeight, LavaEvents
 from libs.print_time import PrintTime
@@ -25,9 +25,17 @@ def update_chain_list():
 
 
 def update_chain_coingecko():
-    for chain in Chain.objects.filter(network=NetworkType.MAINNET).exclude(coingecko_id=None):
-        print('chain', chain)
-        chain.update_coingecko_price()
+    for chain in Chain.objects.all():
+        if chain.coingecko_id is None:
+            pass
+        if chain.coingecko_id:
+            chain.update_coingecko_price()
+
+
+
+    # for chain in Chain.objects.filter().exclude(Q(coingecko_id=None) | Q(coingecko_id='null')):
+    #     print('chain', chain)
+    #     chain.update_coingecko_price()
 
 
 def update_chain_rpc_providers():
@@ -82,12 +90,21 @@ def update_chains_past_future_rewards(network=NetworkType.MAINNET):
         raise ValueError('current_month is not set')
     for chain in Chain.objects.all():
         chain.update_rewards(current_month, commit=False)
-        chain.update_months_remaining(current_month)
-        chain.save(update_fields=['past_rewards', 'future_rewards', 'rewards_per_month', 'months_remaining'])
+        chain.update_rewards_end_month(current_month)
+        chain.save(update_fields=[
+            'past_rewards',
+            'future_rewards',
+            'past_rewards_usd',
+            'future_rewards_usd',
+            'current_rewards',
+            'rewards_end_month',
+        ])
     update_total_rewards()
 
 
 def update_total_rewards():
+    for reward in Reward.objects.all():
+        pass
     chains = Chain.objects.filter()
     total_past_rewards = chains.aggregate(total_past_rewards=Sum('past_rewards'))['total_past_rewards']
     total_future_rewards = chains.aggregate(total_future_rewards=Sum('future_rewards'))['total_future_rewards']
@@ -179,3 +196,8 @@ def test_microtoken():
     tokens = ['usdt', 'ulava', 'uarch', 'uatom', 'uniwswap', 'uwon', 'uusdt']
     for token in tokens:
         print(token, is_microtoken(token))
+
+
+def test_get_days_left():
+    mr_delta = get_days_left(8)
+    print(f'{mr_delta.months}m {mr_delta.days}d')

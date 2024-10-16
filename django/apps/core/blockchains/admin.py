@@ -25,7 +25,13 @@ class RewardAdmin(admin.ModelAdmin):
 
 @AdminRegister(models.Denom)
 class DenomAdmin(admin.ModelAdmin):
-    pass
+    def save_model(self, request, obj, form, change):
+        if obj.coingecko_id:
+            try:
+                obj.update_coingecko_price(commit=False)
+            except CoinGeckoException:
+                self.message_user(request, f'ID {obj.coingecko_id} not found in Coingecko', level=messages.ERROR)
+        obj.save()
 
 
 @AdminRegister(models.BlockRequest)
