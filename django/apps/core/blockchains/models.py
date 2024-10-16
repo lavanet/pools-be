@@ -1,5 +1,4 @@
 import re
-from datetime import timedelta
 from decimal import Decimal
 
 from django.core.files import File
@@ -73,6 +72,8 @@ class Chain(models.Model):
         self.current_rewards = Decimal(0)
         if current := self.rewards.filter(month=current_month).order_by('reward_type').first():
             self.current_rewards = current.get_amount()
+        if not self.denom:
+            self.denom = current.denom
 
     def update_rewards(self, current_month=None, commit=True):
         current_month = current_month or KeyValue.get(f'mainnet_current_month')
@@ -128,13 +129,14 @@ class Chain(models.Model):
         if can_update_coingecko(self, force=force):
             logger.debug('update_coingecko_price(): %s, cgid: %s', self, self.coingecko_id)
             coin = CoinGeckoQuery.query_coin(coin_id=self.coingecko_id)
-            self.denom, created = Denom.objects.update_or_create(
-                denom=coin['symbol'],
-                defaults={
-                    'coingecko_id': self.coingecko_id,
-                    'coingecko_last_update': now(),
-                    'price': coin['market_data']['current_price']['usd'],
-                }, )
+            if not self.denom:
+                self.denom, created = Denom.objects.update_or_create(
+                    denom=coin['symbol'],
+                    defaults={
+                        'coingecko_id': self.coingecko_id,
+                        'coingecko_last_update': now(),
+                        'price': coin['market_data']['current_price']['usd'],
+                    }, )
             if not self.logo:
                 self.logo = File(download_file(coin['image']['large']), name=f'{self.chain_id}.png')
             self.coingecko_last_update = now()

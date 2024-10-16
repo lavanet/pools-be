@@ -14,8 +14,7 @@ def refresh_coin_list():
     """
     coin_list = {'date_updated': now().strftime('%Y-%m-%d %H:%M:%S'), 'coins': []}
     for coin in CoinGeckoQuery.query_coin_list():
-        if coin['symbol'].startswith('u'):
-            coin_list['coins'].append(coin['id'])
+        coin_list['coins'].append(coin['id'])
     KeyValue.set('coingecko_tokens_startswith_u', coin_list)
     return coin_list
 

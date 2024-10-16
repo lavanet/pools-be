@@ -40,6 +40,7 @@ class ChainCardSerializer(serializers.ModelSerializer):
             'total_requests',
             'rewards_end_month',
             'estimated_apr',
+            'rpc_url',
             'rewards_end',
             'rewards_days_remaining',
         ]
