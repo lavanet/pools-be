@@ -25,7 +25,8 @@ class RewardViewSet(viewsets.ModelViewSet):
 class HomeViewSet(viewsets.ViewSet):
     def list(self, request):
         totals = KeyValue.fetch(['total_rewards', 'total_past_rewards', 'total_future_rewards', 'total_requests'])
-        chains = ChainCardSerializer(Chain.objects.filter(is_active=True), many=True)
+        chains = Chain.objects.filter(is_active=True)
+        chains = ChainCardSerializer(chains, many=True)
         return Response({
             'chains': chains.data,
             **totals,

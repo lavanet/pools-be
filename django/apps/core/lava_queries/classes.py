@@ -28,6 +28,7 @@ class LavaQueryBase:
     NETWORKS = {
         NetworkType.MAINNET: 'https://lava.tendermintrpc.lava.build',
         NetworkType.TESTNET: 'https://lav1.tendermintrpc.lava.build',
+        'testnet2': 'https://lav1.tendermintrpc.lava.build',
     }
 
     def __init__(self, network=NetworkType.MAINNET):

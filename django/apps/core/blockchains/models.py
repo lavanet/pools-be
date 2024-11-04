@@ -17,6 +17,7 @@ from .utils import get_month, get_days_left, can_update_coingecko
 class Chain(models.Model):
     chain_id = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=128)
+    name_override = models.CharField(max_length=128, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     rpc_node_runners = models.PositiveIntegerField(default=0)
     denom = models.ForeignKey('Denom', on_delete=models.PROTECT, related_name='chains', null=True, blank=True)
@@ -40,7 +41,7 @@ class Chain(models.Model):
 
     @property
     def clean_name(self):
-        return self.re_clean_name.sub('', self.name).strip().capitalize()
+        return self.name_override or self.re_clean_name.sub('', self.name).strip().capitalize()
 
     def _sum_rewards(self, rewards):
         rewards = rewards.select_related('denom').order_by('month')
