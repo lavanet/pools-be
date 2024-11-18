@@ -180,7 +180,7 @@ class Denom(models.Model):
             self.price = coin['market_data']['current_price']['usd']
             self.coingecko_last_update = now()
             if commit:
-                self.save(update_fields=['denom', 'coingecko_last_update'])
+                self.save(update_fields=['price', 'coingecko_last_update'])
 
 
 class MicroDenom(models.Model):

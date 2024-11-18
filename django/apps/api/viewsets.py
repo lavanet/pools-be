@@ -6,7 +6,7 @@ from apps.core.blockchains.models import Chain, Reward
 from apps.core.kvstore.models import KeyValue
 
 
-class ChainViewSet(viewsets.ModelViewSet):
+class ChainViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Chain.objects.all()
     serializer_class = ChainSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -14,7 +14,7 @@ class ChainViewSet(viewsets.ModelViewSet):
     search_fields = ['id', 'name']
 
 
-class RewardViewSet(viewsets.ModelViewSet):
+class RewardViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Reward.objects.all()
     serializer_class = RewardSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]

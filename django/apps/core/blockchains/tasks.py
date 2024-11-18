@@ -34,6 +34,11 @@ def update_chain_coingecko():
             chain.update_coingecko_price()
 
 
+def update_denom_coingecko():
+    for denom in Denom.objects.all():
+        denom.update_coingecko_price()
+
+
 def update_chain_rpc_providers():
     for chain in Chain.objects.all():
         chain.update_chain_rpc_providers()
@@ -168,59 +173,7 @@ def update_request_relays(network, timeout=None):
 
 
 def update_request_relays_testnet():
-    update_request_relays_testnet_parallel()
-    # update_request_relays(NetworkType.TESTNET, timeout=50)
-
-
-def update_request_relays_testnet_parallel():
-    def _update_request_relays(network, timeout=None):
-        chains = {chain.chain_id: chain.pk for chain in Chain.objects.all()}
-        expire_time = expire(timeout)
-
-        def get_relays(event):
-            for entry in event:
-                chain_id = None
-                relayNumber = None
-                for e in entry:
-                    if e['key'].startswith('chainID.'):
-                        chain_id = e['value']
-                    if e['key'].startswith('relayNumber.'):
-                        relayNumber = e['value']
-                if chain_id and relayNumber:
-                    yield chain_id, relayNumber
-
-        events = LavaEvents(network=network)
-        events2 = LavaEvents(network='testnet2')
-        height = KeyValue.get(f'{network}_relay_height', 0)
-
-        def _get_block(_height, _events):
-            relays = defaultdict(int)
-            for chainid, relaynumber in get_relays(_events.query_lava_relay_payment(height=_height)):
-                relays[chainid] += int(relaynumber)
-            logger.debug('update_request_relays() relays: %s, %s', relays, _height)
-
-            blockrequest = []
-            for chainid, relaynumber in relays.items():
-                blockrequest.append(BlockRequest(
-                    chain_id=chains[chainid],
-                    height=_height,
-                    network=network,
-                    requests=relaynumber))
-            BlockRequest.objects.bulk_create(blockrequest)
-
-        while not expire_time or now() < expire_time:
-            print('height:', height)
-            height += 1
-            with ThreadPoolExecutor() as executor:
-                executor.submit(_get_block, height, events)
-                height += 1
-                try:
-                    _get_block(height, events2)
-                except:
-                    break
-        KeyValue.set(f'{network}_relay_height', height)
-
-    _update_request_relays(NetworkType.TESTNET, timeout=50)
+    update_request_relays(NetworkType.TESTNET, timeout=50)
 
 
 def update_request_relays_mainnet():
@@ -238,7 +191,7 @@ def update_total_requests():
 def hourly_update():
     update_chain_list()
     update_chain_rewards()
-    # update_chain_rewards_token()
+    update_denom_coingecko()
     freeze_chain_rewards_price_usd()
     update_chains_past_future_rewards()
     update_total_rewards()
