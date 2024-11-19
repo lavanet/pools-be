@@ -9,7 +9,7 @@ from apps.core.blockchains.classes import DenomStore
 from apps.core.blockchains.constants import NetworkType
 from apps.core.blockchains.models import Chain, Reward, RewardType, BlockRequest, Denom
 from apps.core.blockchains.utils import expire, get_days_left
-from apps.core.coingecko.classes import CoinGeckoQuery
+from apps.core.coingecko.classes import CoinGeckoQuery, CoinGeckoException
 from apps.core.kvstore.models import KeyValue
 from apps.core.lava_queries.classes import LavaQuery, LavaQueryException, LavaQueryInvalidHeight, LavaEvents
 from libs.print_time import PrintTime
@@ -26,7 +26,7 @@ def update_chain_list():
                 defaults={'name': chain.chainName, })
 
 
-def update_chain_coingecko():
+def _update_chain_coingecko():
     for chain in Chain.objects.all():
         if chain.coingecko_id is None:
             pass
@@ -36,7 +36,14 @@ def update_chain_coingecko():
 
 def update_denom_coingecko():
     for denom in Denom.objects.all():
-        denom.update_coingecko_price()
+        try:
+            denom.update_coingecko_price()
+        except CoinGeckoException:
+            logger.warning('update_denom_coingecko(): %s', denom, exc_info=True)
+            # Got rate limited
+            return
+        except:
+            logger.warning('update_denom_coingecko(): Could not update price: %s', denom)
 
 
 def update_chain_rpc_providers():
@@ -191,11 +198,11 @@ def update_total_requests():
 def hourly_update():
     update_chain_list()
     update_chain_rewards()
-    update_denom_coingecko()
     freeze_chain_rewards_price_usd()
     update_chains_past_future_rewards()
     update_total_rewards()
     update_total_requests()
+    update_denom_coingecko()
 
 
 def test_update_total_rewards():

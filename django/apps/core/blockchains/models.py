@@ -147,7 +147,9 @@ class Denom(models.Model):
     denom = models.CharField(max_length=32, primary_key=True)
     ibc_denom = models.CharField(max_length=68, null=True, blank=True)
     price = models.DecimalField(verbose_name='Price (USD)', max_digits=36, decimal_places=12, default=0)
-    coingecko_id = models.CharField(max_length=64, null=True, blank=True)
+    coingecko_id = models.CharField(max_length=64, null=True, blank=True,
+                                    help_text='CoinGecko ID for the token. '
+                                              'Use "usd" for stablecoins to keep the price to 1.')
     coingecko_last_update = models.DateTimeField(null=True, blank=True)
     microtoken_factor = models.PositiveBigIntegerField(default=1, blank=True)
 
@@ -174,6 +176,11 @@ class Denom(models.Model):
         return Decimal(self.get_amount(amount) * (usd_price or self.price)).quantize(Decimal('1'))
 
     def update_coingecko_price(self, commit=True, force=False):
+        if self.coingecko_id.lower() == 'usd':
+            self.price = Decimal(1)
+            self.coingecko_last_update = now()
+            if commit:
+                self.save(update_fields=['price', 'coingecko_last_update'])
         if can_update_coingecko(self, force=force):
             logger.debug('update_coingecko_price(): %s, cgid: %s', self, self.coingecko_id)
             coin = CoinGeckoQuery.query_coin(coin_id=self.coingecko_id)
